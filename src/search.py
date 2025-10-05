@@ -1,3 +1,10 @@
+import os
+from typing import Optional
+
+from langchain.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import ChatOpenAI
+
 PROMPT_TEMPLATE = """
 CONTEXTO:
 {contexto}
@@ -20,10 +27,24 @@ Pergunta: "Você acha isso bom ou ruim?"
 Resposta: "Não tenho informações necessárias para responder sua pergunta."
 
 PERGUNTA DO USUÁRIO:
-{pergunta}
+{question}
 
 RESPONDA A "PERGUNTA DO USUÁRIO"
 """
 
-def search_prompt(question=None):
-    pass
+
+def search_prompt(question: str, contexto: Optional[str] = None) -> str:
+    if not question:
+        raise ValueError("question deve ser informado")
+
+    prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE.strip())
+    chain = prompt | ChatOpenAI(
+        model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
+        temperature=0,
+    ) | StrOutputParser()
+
+    payload = {
+        "question": question,
+        "contexto": contexto or "Nenhuma informação relevante encontrada para esta pergunta."
+    }
+    return chain.invoke(payload)
